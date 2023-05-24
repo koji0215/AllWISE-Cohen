@@ -1,0 +1,193 @@
+<head>
+<style type="text/css">
+  table {
+    border: 2px #808080 solid;
+    border-collapse: collapse;
+    table-layout: auto;
+  }
+  th {
+    border: 1px solid grey;
+    padding: 3px 10px;
+    font-weight: bold;
+    text-align: center;
+  }
+
+  th[scope='col'] {
+    background-color: #696969;
+    color: #fff;
+  }
+
+  th[scope='row'] {
+    background-color: #d7d9f2;
+  }
+
+  td {
+    border: 1px solid;
+    padding: 3px 10px;
+    background: #ddd;
+    font-weight: bold;
+    text-align: center;
+  }
+  .item {
+    border: 1px solid;
+    padding: 3px 10px;
+    background: #ddd;
+    font-weight: bold;
+    text-align: center;
+  }
+  .value {
+    border: 1px solid;
+    padding: 3px 10px;
+    cursor: pointer;
+    width: 100px;
+  }
+
+</style>
+</head>
+
+<form>
+  <p>RA(degree):<br>
+    <input type="number" id="RA"></p>
+  <p>dec(degree):<br>
+    <input type="number" id="dec"></p>
+  <button id="btn" type="button">Submit</button>
+</form>
+
+<body>
+
+<div id="table-container"></div>
+
+<script>
+
+
+document.getElementById('btn').addEventListener('click', ()=>{
+const lon1 = document.getElementById('RA').value;
+const lat1 = document.getElementById('dec').value;
+
+let csv = new XMLHttpRequest();
+
+  // CSVファイルへのパス
+csv.open("GET", "AllWISE-Cohen.csv", false);
+
+  // csvファイル読み込み失敗時のエラー対応
+try {
+  csv.send(null);
+} catch (err) {
+  console.log(err);
+}
+
+  // 配列を定義
+let csvArray = [];
+
+  // 改行ごとに配列化
+let lines = csv.responseText.split(/\r\n|\n/);
+
+  // 1行ごとに処理
+for (let i = 0; i < lines.length; ++i) {
+  let cells = lines[i].split(",");
+  if (cells.length != 1) {
+    csvArray.push(cells);
+  }
+}
+
+const refArray = JSON.parse(JSON.stringify(csvArray));
+
+
+
+let lon1rad = lon1 * Math.PI / 180;
+let lat1rad = lat1 * Math.PI / 180;
+
+
+
+var AngularDistance = function(x,y) {
+
+  let lon = x;
+  let lonrad = lon * Math.PI / 180;
+  let lat = y;
+  let latrad = lat * Math.PI / 180;
+  let sdlon = Math.sin(lonrad - lon1rad);
+  let cdlon = Math.cos(lonrad - lon1rad);
+  let slat1 = Math.sin(lat1rad);
+  let slat = Math.sin(latrad);
+  let clat1 = Math.cos(lat1rad);
+  let clat = Math.cos(latrad);
+  let num1 = clat * sdlon;
+  let num2 = clat1 * slat - slat1 * clat * cdlon;
+  let denominator = slat1 * slat + clat1 * clat * cdlon;
+
+  let dinrad = Number(Math.atan2(Math.hypot(num1,num2),denominator));
+
+  return dinrad * 180 * 3600 / Math.PI;
+  //let d = dinrad * 180 * 3600 / Math.PI;
+  //d:arcsec単位のdistance
+
+};
+
+csvArray.forEach(function(array) {
+
+
+  array.unshift(AngularDistance(Number(array[2]),Number(array[3])));
+  //Arraycopyの1列目にdを追加
+
+});
+
+csvArray.sort((a,b) => {
+  return(a[0]-b[0])
+})
+
+csvArray[0].splice(0,1,'DistanceFromStar')
+
+console.log(csvArray);
+
+//var Candidate = [ csvArray[0],csvArray[1],csvArray[2],csvArray[3],csvArray[4],csvArray[5]]
+
+let first = { No:1, dinstance:csvArray[1][0], HDnumber:csvArray[1][32], Ra:csvArray[1][3], Dec:csvArray[1][4]};
+let second = { No:2, dinstance:csvArray[2][0], HDnumber:csvArray[2][32], Ra:csvArray[2][3], Dec:csvArray[2][4]};
+let third = { No:3, dinstance:csvArray[3][0], HDnumber:csvArray[3][32], Ra:csvArray[3][3], Dec:csvArray[3][4]};
+let fourth = { No:4, dinstance:csvArray[4][0], HDnumber:csvArray[4][32], Ra:csvArray[4][3], Dec:csvArray[4][4]};
+let fifth = { No:5, dinstance:csvArray[5][0], HDnumber:csvArray[5][32], Ra:csvArray[5][3], Dec:csvArray[5][4]};
+let sixth = { No:6, dinstance:csvArray[6][0], HDnumber:csvArray[6][32], Ra:csvArray[6][3], Dec:csvArray[6][4]};
+let seventh = { No:7, dinstance:csvArray[7][0], HDnumber:csvArray[7][32], Ra:csvArray[7][3], Dec:csvArray[7][4]};
+let eighth = { No:8, dinstance:csvArray[8][0], HDnumber:csvArray[8][32], Ra:csvArray[8][3], Dec:csvArray[8][4]};
+let ninth = { No:9, dinstance:csvArray[9][0], HDnumber:csvArray[9][32], Ra:csvArray[9][3], Dec:csvArray[9][4]};
+let tenth = { No:10, dinstance:csvArray[10][0], HDnumber:csvArray[10][32], Ra:csvArray[10][3], Dec:csvArray[10][4]};
+
+const candidate = [first,second,third,fourth,fifth,sixth,seventh,eighth,ninth,tenth];
+
+function createTableFromObjects(data) {
+  const table = document.createElement('table');
+  const headerRow = document.createElement('tr');
+
+  // Create table header row
+  const keys = Object.keys(data[0]);
+  for (const key of keys) {
+    const headerCell = document.createElement('th');
+    headerCell.textContent = key;
+    headerRow.appendChild(headerCell);
+  }
+  table.appendChild(headerRow);
+
+  // Create table data rows
+  for (const obj of data) {
+    const dataRow = document.createElement('tr');
+    for (const key of keys) {
+      const dataCell = document.createElement('td');
+      dataCell.textContent = obj[key];
+      dataRow.appendChild(dataCell);
+    }
+    table.appendChild(dataRow);
+  }
+
+  return table;
+}
+
+const table = createTableFromObjects(candidate);
+
+const tableContainer = document.getElementById('table-container');
+tableContainer.appendChild(table);
+
+
+
+});
+
+</script>
